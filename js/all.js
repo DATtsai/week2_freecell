@@ -1,4 +1,8 @@
-// 設置開局
+var stackArray;
+var staies;
+var moveSpace;
+
+    // 設置開局
 (function (){
     
     // 1.產生牌
@@ -10,11 +14,6 @@
     };
 
     // 2.產生遊戲空間
-
-    let stackArray;
-    let staies;
-    let moveSpace;
-
     stackArray = {
         stack1: [],
         stack2: [],
@@ -110,21 +109,206 @@
     };
     
     openGame();
-    
     // 把牌顯示於頁面上
+    render();
+
+
+})();
+    
+function render(){
     for(let space in moveSpace){
         let str = '';
         let ul = document.querySelector('.'+space);
                 
         moveSpace[space].forEach(function(item){      
-            str+= '<li>' + item.suit + ' ' + item.number + '</li>';
+            str+= '<li draggable="true">' + item.suit + ' ' + item.number + '</li>';
         });
     
         ul.innerHTML = str;
     }
-
-})();
+}
 
 // 監聽移動
+// 1.判斷是否可移動
+// a.移動張數最大值 = 空白欄未用格數 + 八序列空格數 + 1
+// b.需是紅黑相間
+// c.多張需是順號
+
+var isDragged; // {is: true, parentClassName: string, index: number} | false
+var dragged;
+
+function isDragged(e){
+    isDragged = false;
+
+    let mouseDowned = e.target;
+    // console.log(mouseDowned);
+    if(mouseDowned.nodeName !== 'LI' | !mouseDowned.textContent){
+        return;
+    }
+
+    let length = mouseDowned.parentNode.childNodes.length;
+    let mouseDownedIndex = getChildrenIndex(mouseDowned);
+    let numMoveCards = length - mouseDownedIndex;
+    // console.log(numMoveCards);
+    let maxNumMove = checkMaxMoveCards();
+
+    function getChildrenIndex(el){
+        let i=0;
+        while(el = el.previousElementSibling){
+            i++;
+        }
+        return i;
+    }
+
+    function checkMaxMoveCards(){
+        let maxNumMove = 0;
+        let notUsedStaies = 0;
+        let bonusMoveSpace = 0;
+        
+        for(let i in staies){
+            // console.log(staies[i]);
+            if(staies[i].length === 0){
+                notUsedStaies+=1;
+            }
+        }
+    
+        for(let i in moveSpace){
+            // console.log(moveSpace[i]);
+            if(moveSpace[i].length === 0){
+                bonusMoveSpace+=1;
+            }
+        }
+    
+        maxNumMove = notUsedStaies + bonusMoveSpace + 1;
+        return maxNumMove;
+    }
+
+    function isColorSame(el, className, mouseDownedIndex){        
+        let color = (function (){
+                        suit = moveSpace[className][mouseDownedIndex].suit;
+                        if(suit === 'spade' | suit === 'club'){
+                            return 'black';
+                        }else{
+                            return 'red'
+                        }
+                    })();
+        let i = 0;
+        while(el = el.nextElementSibling){
+            let nextColor = (function (){
+                suit = moveSpace[className][mouseDownedIndex+(i+1)].suit;
+                if(suit === 'space' | suit === 'club'){
+                    return 'black';
+                }else{
+                    return 'red';
+                }
+            })();
+
+            if(color===nextColor){
+                return true;
+            }else{
+                i++;
+            }            
+        }
+        return false;
+    }
+
+    function isNumberDesc(el, className, mouseDownedIndex){
+        let number = moveSpace[className][mouseDownedIndex].number;
+        let i = 0;
+        while(el = el.nextElementSibling){
+            let nextNumber = moveSpace[className][mouseDownedIndex+(i+1)].number;
+            if(!(nextNumber === number-1)){
+                return false;
+            }
+            i++;
+            number = nextNumber;
+        }
+        return true;    
+    }
+
+    if(numMoveCards>maxNumMove){
+        console.log('1false');
+        return false;
+    }else{
+        if(isColorSame(mouseDowned, mouseDowned.parentNode.classList[0], mouseDownedIndex)){
+            console.log('2false');
+            return false;
+        }else{
+            if(isNumberDesc(mouseDowned, mouseDowned.parentNode.classList[0], mouseDownedIndex)){
+                console.log('true');
+                isDragged = {is: true, parentClassName: mouseDowned.parentNode.classList[0], index: mouseDownedIndex, moveNum: numMoveCards};
+                return true;
+            }
+            else{
+                console.log('3false');
+                return false;
+            }
+        }
+    }
+}
+
+function dragStart(e){
+    dragged = e.target;
+    console.log(dragged);
+}
+
 
 // 移動規則判斷
+function drop(e){
+    if(!isDragged.is){
+        return;
+    }
+    // console.log(e.target);
+    let drop = e.target;
+    if(drop.parentNode.classList[0] === isDragged.parentNode){
+        return;
+    }
+    if(drop.nodeName == 'LI'){       
+        e.target.parentNode.style.background = '';
+
+        for(let i=0; i<isDragged.moveNum; i++){
+            let item = moveSpace[isDragged.parentClassName][isDragged.index];
+            console.log(item);
+            moveSpace[drop.parentNode.classList[0]].push(item);
+            moveSpace[dragged.parentNode.classList[0]].splice(isDragged.index, 1);
+        }
+        render();
+
+    }
+}
+
+
+function dragOver(e){
+    // console.log(e.target);
+    e.preventDefault();
+}
+
+function enterDrop(e){
+    if(!isDragged.is){
+        return;
+    }
+    // console.log(e.target);
+    if(e.target.nodeName == 'LI'){        
+        e.target.parentNode.style.background = 'red';
+    }
+}
+
+function leaveDrop(e){
+    // console.log(e.target);
+    if(e.target.nodeName == 'LI'){
+        e.target.parentNode.style.background = '';
+    }
+}
+
+
+document.addEventListener('mousedown', isDragged);
+document.addEventListener('dragstart', dragStart);
+document.addEventListener('dragover', dragOver, true);
+document.addEventListener('drop', drop, true);
+
+// dragenter表示一個拖曳動作過程時，被拖曳物件所進入的所有的DOM，只有在進入的瞬間，回傳一個被進入的DOM
+document.addEventListener('dragenter', enterDrop);
+// dragenter表示一個拖曳動作過程時，被拖曳物件所離開的所有的DOM，只有在離開的瞬間，回傳一個被離開的DOM
+document.addEventListener('dragleave', leaveDrop);
+
+
