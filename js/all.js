@@ -120,7 +120,7 @@ function render(){
         let str = '';
         let ul = document.querySelector('.'+space);
                 
-        moveSpace[space].forEach(function(item){      
+        moveSpace[space].forEach(function(item){
             str+= '<li draggable="true">' + item.suit + ' ' + item.number + '</li>';
         });
     
@@ -152,7 +152,10 @@ function isDragged(e){
     // console.log(numMoveCards);
     let maxNumMove = checkMaxMoveCards();
 
-    function getChildrenIndex(el){
+    function getChildrenIndex(el){        
+        if(el.nodeName!='LI'){
+            return;
+        }
         let i=0;
         while(el = el.previousElementSibling){
             i++;
@@ -196,7 +199,7 @@ function isDragged(e){
         while(el = el.nextElementSibling){
             let nextColor = (function (){
                 suit = moveSpace[className][mouseDownedIndex+(i+1)].suit;
-                if(suit === 'space' | suit === 'club'){
+                if(suit === 'spade' | suit === 'club'){
                     return 'black';
                 }else{
                     return 'red';
@@ -206,6 +209,7 @@ function isDragged(e){
             if(color===nextColor){
                 return true;
             }else{
+                color = nextColor; 
                 i++;
             }            
         }
@@ -227,11 +231,11 @@ function isDragged(e){
     }
 
     if(numMoveCards>maxNumMove){
-        console.log('1false');
+        console.log('overMaxNum');
         return false;
     }else{
         if(isColorSame(mouseDowned, mouseDowned.parentNode.classList[0], mouseDownedIndex)){
-            console.log('2false');
+            console.log('sameColor');
             return false;
         }else{
             if(isNumberDesc(mouseDowned, mouseDowned.parentNode.classList[0], mouseDownedIndex)){
@@ -240,7 +244,7 @@ function isDragged(e){
                 return true;
             }
             else{
-                console.log('3false');
+                console.log('notDesc');
                 return false;
             }
         }
@@ -255,25 +259,65 @@ function dragStart(e){
 
 // 移動規則判斷
 function drop(e){
-    if(!isDragged.is){
-        return;
-    }
-    // console.log(e.target);
+
     let drop = e.target;
+    // 拉在自己所屬列上不做動作
     if(drop.parentNode.classList[0] === isDragged.parentNode){
         return;
     }
-    if(drop.nodeName == 'LI'){       
-        e.target.parentNode.style.background = '';
 
+    // 監測drag和drop DOM，對應處理移動空間(moveSpace)內的陣列變化後，重新泫染頁面
+    if(drop.nodeName == 'LI'){       
+        drop.parentNode.style.background = '';
+
+        let dropCard = moveSpace[drop.parentNode.classList[0]][drop.parentNode.childElementCount-1];
+        let draggedCard = moveSpace[isDragged.parentClassName][isDragged.index];
+        // 判斷是否能擺入，1.花色是否相異，2.數字是否遞減1
+        let isDrop = (function (dropCard, draggedCard){
+                            let dropColor;
+                            if(dropCard.suit === 'spade' | dropCard.suit === 'club'){
+                                dropColor = 'black';
+                            }else{
+                                dropColor = 'red';
+                            }
+                            let draggedColor;
+                            if(draggedCard.suit === 'spade' | draggedCard.suit === 'club'){
+                                draggedColor = 'black';
+                            }else{
+                                draggedColor = 'red';
+                            }
+                            console.log(draggedColor, dropColor);
+                            if(dropColor === draggedColor){
+                                console.log('samecolor');
+                                return false;
+                            }
+                            console.log(draggedCard.number, dropCard.number);
+                            if((dropCard.number-1) === draggedCard.number){
+                                return true;
+                            }else{
+                                console.log('numbererror');
+                                return false;
+                            }
+                        })(dropCard, draggedCard);
+        console.log(isDrop);
+        if(isDrop){
+            for(let i=0; i<isDragged.moveNum; i++){
+                let item = moveSpace[isDragged.parentClassName][isDragged.index];
+                moveSpace[drop.parentNode.classList[0]].push(item);
+                moveSpace[dragged.parentNode.classList[0]].splice(isDragged.index, 1);
+            }
+        }
+
+        render();
+
+    }
+    else if(drop.nodeName == 'UL' & moveSpace[e.target.classList[0]].length === 0){
         for(let i=0; i<isDragged.moveNum; i++){
             let item = moveSpace[isDragged.parentClassName][isDragged.index];
-            console.log(item);
-            moveSpace[drop.parentNode.classList[0]].push(item);
+            moveSpace[drop.classList[0]].push(item);
             moveSpace[dragged.parentNode.classList[0]].splice(isDragged.index, 1);
         }
         render();
-
     }
 }
 
@@ -284,11 +328,14 @@ function dragOver(e){
 }
 
 function enterDrop(e){
-    if(!isDragged.is){
+    if(!isDragged){
         return;
     }
     // console.log(e.target);
     if(e.target.nodeName == 'LI'){        
+        e.target.parentNode.style.background = 'red';
+    }
+    if(e.target.nodeName == 'UL' & moveSpace[e.target.classList[0]] === []){
         e.target.parentNode.style.background = 'red';
     }
 }
@@ -296,6 +343,9 @@ function enterDrop(e){
 function leaveDrop(e){
     // console.log(e.target);
     if(e.target.nodeName == 'LI'){
+        e.target.parentNode.style.background = '';
+    }
+    if(e.target.nodeName == 'UL' & moveSpace[e.target.classList[0]] === []){
         e.target.parentNode.style.background = '';
     }
 }
