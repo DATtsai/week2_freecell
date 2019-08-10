@@ -126,6 +126,29 @@ function render(){
     
         ul.innerHTML = str;
     }
+
+    for(let stay in staies){
+        let str = '<li></li>';
+        let ul = document.querySelector('.'+stay);
+
+        staies[stay].forEach(function(item){
+            str = '<li draggable="true">' + item.suit + ' ' + item.number + '</li>';
+        });
+
+        ul.innerHTML = str;
+    }
+
+    for(let stack in stackArray){
+        let str = '<li></li>';
+        let ul = document.querySelector('.'+stack);
+
+        stackArray[stack].forEach(function(item){
+            str = '';
+            str+= '<li draggable="false">' + item.suit + ' ' + item.number + '</li>';
+        });
+        ul.innerHTML = str;
+        ul.lastChild.draggable = 'true';
+    }
 }
 
 // 監聽移動
@@ -134,7 +157,7 @@ function render(){
 // b.需是紅黑相間
 // c.多張需是順號
 
-var isDragged; // {is: true, parentClassName: string, index: number} | false
+var isDragged; // {is: true, from: string, parentClassName: string, index: number, moveNum: number} | false
 var dragged;
 
 function isDragged(e){
@@ -148,6 +171,21 @@ function isDragged(e){
 
     let length = mouseDowned.parentNode.childNodes.length;
     let mouseDownedIndex = getChildrenIndex(mouseDowned);
+
+    // 判斷是否為staies上可拉牌
+    if(mouseDowned.parentNode.parentNode.className == 'staies'){
+        isDragged = {is: true, from: staies, parentClassName: mouseDowned.parentNode.classList[0], index: mouseDownedIndex, moveNum: 1};
+        console.log('true from staies');
+        return;
+    }
+    // 判斷是否為stack上可拉牌
+    if(mouseDowned.parentNode.parentNode.className == 'stack' & mouseDowned.draggable){
+        isDragged = {is: true, from: stackArray, parentClassName: mouseDowned.parentNode.classList[0], index: mouseDownedIndex, moveNum: 1};
+        console.log('true from stack');
+        return;
+    }
+
+    // 判斷moveSpace可拉牌
     let numMoveCards = length - mouseDownedIndex;
     // console.log(numMoveCards);
     let maxNumMove = checkMaxMoveCards();
@@ -240,7 +278,7 @@ function isDragged(e){
         }else{
             if(isNumberDesc(mouseDowned, mouseDowned.parentNode.classList[0], mouseDownedIndex)){
                 console.log('true');
-                isDragged = {is: true, parentClassName: mouseDowned.parentNode.classList[0], index: mouseDownedIndex, moveNum: numMoveCards};
+                isDragged = {is: true, from: moveSpace, parentClassName: mouseDowned.parentNode.classList[0], index: mouseDownedIndex, moveNum: numMoveCards};
                 return true;
             }
             else{
@@ -256,22 +294,30 @@ function dragStart(e){
     console.log(dragged);
 }
 
-
 // 移動規則判斷
 function drop(e){
 
     let drop = e.target;
+    console.log('drop');
+    console.log(drop);
+    // 拖曳牌false不再判斷落點
+    if(isDragged == false){
+        return;
+    }
     // 拉在自己所屬列上不做動作
-    if(drop.parentNode.classList[0] === isDragged.parentNode){
+    if(drop.parentNode.classList[0] === isDragged.parentClassName){
+        drop.parentNode.style.background = '';
         return;
     }
 
-    // 監測drag和drop DOM，對應處理移動空間(moveSpace)內的陣列變化後，重新泫染頁面
-    if(drop.nodeName == 'LI'){       
+    // 監測drag和drop DOM，處理drag和drop對應的陣列變化後，重新泫染頁面
+    // 1.處理往moveSpace的移動
+    if(drop.nodeName == 'LI' & drop.parentNode.parentNode.className == 'moveSpace'){       
         drop.parentNode.style.background = '';
 
-        let dropCard = moveSpace[drop.parentNode.classList[0]][drop.parentNode.childElementCount-1];
-        let draggedCard = moveSpace[isDragged.parentClassName][isDragged.index];
+        let dropCard = moveSpace[drop.parentNode.classList[0]][drop.parentNode.childElementCount-1];        
+        let draggedCard = isDragged.from[isDragged.parentClassName][isDragged.index];
+
         // 判斷是否能擺入，1.花色是否相異，2.數字是否遞減1
         let isDrop = (function (dropCard, draggedCard){
                             let dropColor;
@@ -286,12 +332,10 @@ function drop(e){
                             }else{
                                 draggedColor = 'red';
                             }
-                            console.log(draggedColor, dropColor);
                             if(dropColor === draggedColor){
                                 console.log('samecolor');
                                 return false;
                             }
-                            console.log(draggedCard.number, dropCard.number);
                             if((dropCard.number-1) === draggedCard.number){
                                 return true;
                             }else{
@@ -299,28 +343,83 @@ function drop(e){
                                 return false;
                             }
                         })(dropCard, draggedCard);
-        console.log(isDrop);
         if(isDrop){
             for(let i=0; i<isDragged.moveNum; i++){
-                let item = moveSpace[isDragged.parentClassName][isDragged.index];
+                let item = isDragged.from[isDragged.parentClassName][isDragged.index];
                 moveSpace[drop.parentNode.classList[0]].push(item);
-                moveSpace[dragged.parentNode.classList[0]].splice(isDragged.index, 1);
+                isDragged.from[dragged.parentNode.classList[0]].splice(isDragged.index, 1);
             }
-        }
+            render();
+        }        
+    }else 
+    // moveSpace內遇到空欄時處理
+    if(drop.nodeName == 'UL' & drop.parentNode.className == 'moveSpace'){
+        if(moveSpace[drop.classList[0]].length === 0){        
+            for(let i=0; i<isDragged.moveNum; i++){
+                let item = isDragged.from[isDragged.parentClassName][isDragged.index];
+                moveSpace[drop.classList[0]].push(item);
+                isDragged.from[dragged.parentNode.classList[0]].splice(isDragged.index, 1);
 
-        render();
+            }            
+            render();   
+        }             
+    }else
+    // 2.處理往staies的移動
+    if(drop.nodeName == 'LI' & drop.parentNode.parentNode.className == 'staies'){
+        let isDrop = (function(){
+            // 判斷拖曳之卡是否為拖曳欄的最上面位置
+            if(isDragged.from[isDragged.parentClassName].length != isDragged.index + 1 ){
+                return false;
+            }
+            // 判斷拖曳位置是否有牌
+            if(staies[drop.parentNode.classList[0]].length != 0){
+                return false;
+            }
+            
+            return true;
+        })();
 
-    }
-    else if(drop.nodeName == 'UL' & moveSpace[e.target.classList[0]].length === 0){
-        for(let i=0; i<isDragged.moveNum; i++){
-            let item = moveSpace[isDragged.parentClassName][isDragged.index];
-            moveSpace[drop.classList[0]].push(item);
-            moveSpace[dragged.parentNode.classList[0]].splice(isDragged.index, 1);
+        if(isDrop){
+            let item = isDragged.from[isDragged.parentClassName][isDragged.index];
+            staies[drop.parentNode.classList[0]].push(item);
+            isDragged.from[dragged.parentNode.classList[0]].splice(isDragged.index, 1);
+            render();
         }
-        render();
+    }else
+    // 3.處理往stack的移動
+    if(drop.nodeName == 'LI' & drop.parentNode.parentNode.className == 'stack'){
+        let isDrop = (function(){
+            // 判斷拖曳之卡是否為moveSpace個欄最後一張
+            if(isDragged.from[isDragged.parentClassName].length != isDragged.index + 1 ){
+                return false;
+            }
+            // 判斷拖曳位置是否有牌，無牌時判斷拖曳牌是否為1，有牌時判斷拖曳牌與放置區最後一張牌的花色與數字
+            if(stackArray[drop.parentNode.classList[0]].length == 0){
+                if(isDragged.from[isDragged.parentClassName][isDragged.index].number == 1){
+                    return true;
+                }
+            }else{
+                let dropCard = {suit: stackArray[drop.parentNode.classList[0]][stackArray[drop.parentNode.classList[0]].length - 1].suit, number: stackArray[drop.parentNode.classList[0]][stackArray[drop.parentNode.classList[0]].length - 1].number};
+                let draggedCard = {suit: isDragged.from[isDragged.parentClassName][isDragged.index].suit, number: isDragged.from[isDragged.parentClassName][isDragged.index].number};
+                console.log('draggedCard');
+                console.log(draggedCard);
+                if(dropCard.suit == draggedCard.suit){
+                    if(draggedCard.number == (dropCard.number + 1)){
+                        return true;
+                    }
+                }
+            }
+
+        })();
+
+        if(isDrop){
+            let item = isDragged.from[isDragged.parentClassName][isDragged.index];
+            stackArray[drop.parentNode.classList[0]].push(item);
+            isDragged.from[dragged.parentNode.classList[0]].splice(isDragged.index, 1);
+            render();
+        }
     }
 }
-
 
 function dragOver(e){
     // console.log(e.target);
@@ -353,7 +452,7 @@ function leaveDrop(e){
 
 document.addEventListener('mousedown', isDragged);
 document.addEventListener('dragstart', dragStart);
-document.addEventListener('dragover', dragOver, true);
+document.addEventListener('dragover', dragOver);
 document.addEventListener('drop', drop, true);
 
 // dragenter表示一個拖曳動作過程時，被拖曳物件所進入的所有的DOM，只有在進入的瞬間，回傳一個被進入的DOM
