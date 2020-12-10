@@ -121,10 +121,17 @@ function render(){
         let ul = document.querySelector('.'+space);
                 
         moveSpace[space].forEach(function(item){
-            str+= '<li draggable="true">' + item.suit + ' ' + item.number + '</li>';
+            let src = (function(){
+                            let src = changeName(item.suit, item.number);
+                            return 'poker/'+src.suit+'-'+src.number+'.png';                
+                        })();
+            str+= '<li draggable="true" suit="'+item.suit+'" number="'+item.number+'"><img class="pokerPNG" src="'+src+'">'+item.suit+' '+item.number+'</li>';
+            // str+= '<li draggable="true" suit="'+item.suit+'" number="'+item.number+'"><img class="pokerPNG" src="'+src+'"></li>';
+
         });
     
         ul.innerHTML = str;
+        ul.firstChild.style = 'margin-top: 0';
     }
 
     for(let stay in staies){
@@ -132,7 +139,14 @@ function render(){
         let ul = document.querySelector('.'+stay);
 
         staies[stay].forEach(function(item){
-            str = '<li draggable="true">' + item.suit + ' ' + item.number + '</li>';
+            let src = (function(){
+                let src = changeName(item.suit, item.number);
+                return 'poker/'+src.suit+'-'+src.number+'.png';                
+            })();
+
+            str = '<li draggable="true" suit="'+item.suit+'" number="'+item.number+'"><img class="pokerPNG" src="'+src+'">'+item.suit+' '+item.number+'</li>';
+            // str = '<li draggable="true" suit="'+item.suit+'" number="'+item.number+'"><img class="pokerPNG" src="'+src+'"></li>';
+
         });
 
         ul.innerHTML = str;
@@ -143,12 +157,58 @@ function render(){
         let ul = document.querySelector('.'+stack);
 
         stackArray[stack].forEach(function(item){
+            let src = (function(){
+                let src = changeName(item.suit, item.number);
+                return 'poker/'+src.suit+'-'+src.number+'.png';                
+            })();
+
             str = '';
-            str+= '<li draggable="false">' + item.suit + ' ' + item.number + '</li>';
+            str = '<li draggable="true" suit="'+item.suit+'" number="'+item.number+'" style="display: none"><img class="pokerPNG" src="'+src+'">'+item.suit+' '+item.number+'</li>';
+            // str = '<li draggable="true" suit="'+item.suit+'" number="'+item.number+'" style="display: none"><img class="pokerPNG" src="'+src+'"></li>';
+
         });
         ul.innerHTML = str;
+        ul.lastChild.style= "";
         ul.lastChild.draggable = 'true';
     }
+
+    function changeName(suit, number){
+        switch(suit){
+            case 'spade':
+                suit = '黑桃';
+                break;
+            case 'club':
+                suit = '梅花';
+                break;
+            case 'heart':
+                suit = '愛心';   
+                break;
+            case 'dimond':
+                suit = '方塊';   
+                break;
+            default:
+
+        }
+        switch(number){
+            case 1:
+                number = 'A';
+                break;
+            case 11:
+                number = 'J';
+                break;
+            case 12:
+                number = 'Q';
+                break;
+            case 13:
+                number = 'K';
+                break;
+            default:
+            
+        }
+
+        return {suit: suit, number: number};
+    }
+
 }
 
 // 監聽移動
@@ -163,7 +223,7 @@ var dragged;
 function isDragged(e){
     isDragged = false;
 
-    let mouseDowned = e.target;
+    let mouseDowned = e.target.parentNode;
     // console.log(mouseDowned);
     if(mouseDowned.nodeName !== 'LI' | !mouseDowned.textContent){
         return;
@@ -290,14 +350,16 @@ function isDragged(e){
 }
 
 function dragStart(e){
-    dragged = e.target;
+    dragged = e.target.parentNode;
     console.log(dragged);
 }
 
 // 移動規則判斷
 function drop(e){
-
     let drop = e.target;
+    if(e.target.nodeName == 'IMG'){
+        drop = e.target.parentNode;
+    }
     console.log('drop');
     console.log(drop);
     // 拖曳牌false不再判斷落點
@@ -461,3 +523,10 @@ document.addEventListener('dragenter', enterDrop);
 document.addEventListener('dragleave', leaveDrop);
 
 
+// window.onresize = resize;
+
+// function resize(){
+//     let clientHeight = document.querySelector('.pokerPNG').clientHeight;
+//     let append = document.querySelector('.append');
+//     append.innerText = '.moveSpace>ul>li, .staies>ul>li, .stack>ul>li{min-height: '+ (clientHeight + 8) +'px;';
+// }

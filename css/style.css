@@ -1,0 +1,123 @@
+/* http://meyerweb.com/eric/tools/css/reset/ 
+   v2.0 | 20110126
+   License: none (public domain)
+*/
+
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td,
+article, aside, canvas, details, embed, 
+figure, figcaption, footer, header, hgroup, 
+menu, nav, output, ruby, section, summary,
+time, mark, audio, video {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	font-size: 100%;
+	font: inherit;
+	vertical-align: baseline;
+}
+/* HTML5 display-role reset for older browsers */
+article, aside, details, figcaption, figure, 
+footer, header, hgroup, menu, nav, section {
+	display: block;
+}
+body {
+	line-height: 1;
+}
+ol, ul {
+	list-style: none;
+}
+blockquote, q {
+	quotes: none;
+}
+blockquote:before, blockquote:after,
+q:before, q:after {
+	content: '';
+	content: none;
+}
+table {
+	border-collapse: collapse;
+	border-spacing: 0;
+}
+
+/* reset over */
+* {
+    box-sizing: border-box;
+}
+
+.container{
+    width: 1280px;
+    height: auto;
+    margin: 0px auto;
+}
+
+.staies{
+    float: left;
+    width: 45%;
+}
+
+.stack{
+    float: right;
+    width: 45%;
+}
+
+.staies>ul, .stack>ul{
+    float: left;
+    margin-left: 0.25%;
+    margin-right: 0.25%;
+    width: 24.5%;
+}
+
+.staies>ul>li, .stack>ul>li{
+    /* background: lightgray; */
+    border: 1px black solid;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    height: 208px;
+}
+
+.moveSpace{
+    float: left;
+    min-height: 600px;
+    width: 100%;
+}
+
+.moveSpace>ul{
+    float: left;
+    min-width: 11%;
+    margin-left: 0.75%;
+    margin-right: 0.75%;
+    min-height: 100%;
+}
+
+.moveSpace>ul>li, .staies>ul>li, .stack>ul>li{
+    position: relative;
+    /* max-height: 170px; */
+    min-height: 162px;
+    min-width: auto;
+    /* background: lightgray; */
+    padding-top: 4px;
+    padding-bottom: 4px;
+    font-size: 0px;
+}
+
+.staies>ul>li, .stack>ul>li{
+
+}
+
+.moveSpace>ul>li{
+    margin-top: -80%;
+}
+
+.pokerPNG{
+    position: absolute;
+    max-width: 100%;
+    height: auto;
+}
